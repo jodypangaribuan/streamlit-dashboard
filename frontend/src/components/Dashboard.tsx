@@ -22,6 +22,14 @@ const formatRupiah = (amount: number) => {
     }).format(amount).replace('Rp', 'Rp ');
 };
 
+const formatJutaan = (amount: number) => {
+    const millions = amount / 1_000_000;
+    return `Rp ${new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+    }).format(millions)} Jt`;
+};
+
 const formatBillions = (amount: number) => {
     return `Rp ${(amount / 1_000_000_000).toFixed(2)}M`;
 };
@@ -106,33 +114,30 @@ export default function Dashboard() {
 
             {/* Sidebar Overview */}
             <aside className={cn(
-                "w-64 bg-white/80 backdrop-blur-xl border-r border-gray-100 flex flex-col pt-6 pb-6 px-4 shrink-0 z-20 h-screen transition-transform duration-300 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] shadow-purple-500/5",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full absolute md:relative md:translate-x-0"
+                "bg-white/80 backdrop-blur-xl border-r border-gray-100 flex flex-col pt-6 pb-6 shrink-0 z-20 h-screen transition-all duration-300 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] shadow-purple-500/5",
+                isSidebarOpen ? "w-64 px-4 translate-x-0" : "w-16 px-2 md:translate-x-0 -translate-x-full absolute md:relative"
             )}>
-                <div className="flex items-center justify-between mb-10 px-2">
-                    <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
-                        <Zap className="text-yellow-400 w-5 h-5 fill-yellow-400" />
-                    </div>
-                    <button onClick={() => setIsSidebarOpen(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-500 hidden md:block">
-                        <ChevronLeft className="w-5 h-5" />
+                <div className={cn("flex items-center mb-10 px-2", isSidebarOpen ? "justify-end" : "justify-center")}>
+                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-1 rounded-md hover:bg-gray-100 text-gray-500 hidden md:block">
+                        {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto hide-scrollbar">
+                <div className={cn("flex-1 overflow-y-auto hide-scrollbar overflow-x-hidden", !isSidebarOpen && "flex flex-col items-center")}>
                     <div className="mb-8">
-                        <h3 className="px-3 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Favorites</h3>
+                        {isSidebarOpen && <h3 className="px-3 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Favorites</h3>}
                         <nav className="space-y-0.5">
-                            <NavItem icon={<FileText className="w-4 h-4" />} label="Technical Docs" />
-                            <NavItem icon={<FileText className="w-4 h-4" />} label="Campaign Guidelines" />
-                            <NavItem icon={<FileText className="w-4 h-4" />} label="Important Rules" />
-                            <NavItem icon={<FileText className="w-4 h-4" />} label="Onboarding" />
+                            <NavItem icon={<FileText className="w-4 h-4" />} label="Technical Docs" showLabel={isSidebarOpen} />
+                            <NavItem icon={<FileText className="w-4 h-4" />} label="Campaign Guidelines" showLabel={isSidebarOpen} />
+                            <NavItem icon={<FileText className="w-4 h-4" />} label="Important Rules" showLabel={isSidebarOpen} />
+                            <NavItem icon={<FileText className="w-4 h-4" />} label="Onboarding" showLabel={isSidebarOpen} />
                         </nav>
                     </div>
 
                     <div>
-                        <h3 className="px-3 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Main Menu</h3>
+                        {isSidebarOpen && <h3 className="px-3 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Main Menu</h3>}
                         <nav className="space-y-0.5">
-                            <NavItem icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" active />
+                            <NavItem icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" active showLabel={isSidebarOpen} />
                         </nav>
                     </div>
                 </div>
@@ -208,7 +213,7 @@ export default function Dashboard() {
                     <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <SparklineCard
                             title="Laba Bersih"
-                            value={data ? formatRupiah(data.kpis.currentProfit) : '0'}
+                            value={data ? formatJutaan(data.kpis.currentProfit) : '0'}
                             trend={data?.kpis.profitGrowth}
                             chartData={profitSparklineData}
                             color="#8b5cf6" // purple
@@ -340,16 +345,17 @@ export default function Dashboard() {
 }
 
 // NavItem Component
-function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+function NavItem({ icon, label, active = false, showLabel = true }: { icon: React.ReactNode, label: string, active?: boolean, showLabel?: boolean }) {
     return (
         <a href="#" className={cn(
             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-            active ? "bg-gray-100/80 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            active ? "bg-gray-100/80 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+            !showLabel && "justify-center px-0 py-3"
         )}>
             <div className={cn("shrink-0", active ? "text-gray-900" : "text-gray-400")}>
                 {icon}
             </div>
-            {label}
+            {showLabel && <span className="truncate">{label}</span>}
         </a>
     );
 }
