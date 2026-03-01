@@ -1,0 +1,348 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry} % Menambahkan package geometry untuk mengatur margin
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\title{Dokumentasi Kode Dashboard Streamlit}
+\author{Executive Performance Dashboard}
+\date{\today}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\begin{document}
+
+\maketitle
+
+\section*{Pendahuluan}
+Dokumen ini menguraikan fungsionalitas dan logika di balik aplikasi \textbf{Executive Performance Dashboard} yang dibangun menggunakan pustaka Streamlit dengan bahasa Python. Penjelasan di bawah ini memecah kode berdasarkan blok logika (section) utamanya.
+
+\section{Impor Pustaka (Library Imports)}
+Bagian pertama dari kode adalah mengimpor semua pustaka (library) Python yang dibutuhkan agar aplikasi dapat berjalan.
+
+\begin{lstlisting}[language=Python]
+import streamlit as st
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+\begin{itemize}
+	\item \texttt{streamlit}: Merupakan framework utama yang digunakan untuk merender tampilan antarmuka (UI) dashboard web secara interaktif.
+	\item \texttt{pandas}: Digunakan untuk memanipulasi, menyimpan, dan menganalisis set data dalam bentuk format tabel terstruktur (DataFrames).
+	\item \texttt{numpy}: Digunakan untuk melakukan operasi matematika tingkat lanjut, dan pada aplikasi ini sangat bergantung pada \texttt{numpy.random} untuk menggenerasi angka simulasi metrik.
+	\item \texttt{datetime} \& \texttt{timedelta}: Digunakan untuk kalkulasi penanggalan, seperti mendapatkan tanggal hari ini atau menentukan interval hari ke belakang untuk membentuk riwayat data transaksi.
+\end{itemize}
+
+\textbf{Alur Logika:}
+Saat file \texttt{app.py} dieksekusi oleh Streamlit, Python akan menjalankan baris-baris \texttt{import} terlebih dahulu secara berurutan dari atas ke bawah. Proses ini memuat seluruh modul ke dalam memori sehingga fungsi-fungsi seperti \texttt{st.set\_page\_config()}, \texttt{pd.DataFrame()}, \texttt{np.random.seed()}, dan \texttt{datetime.today()} dapat dipanggil di baris-baris selanjutnya. Jika salah satu pustaka belum terinstal di environment, Python akan langsung melempar error \texttt{ModuleNotFoundError} dan aplikasi gagal dimuat.
+
+\section{Konfigurasi Halaman (Page Configuration)}
+Bagian ini mengatur bagaimana halaman di-render oleh browser Web pada detik-detik pertama memuat aplikasi.
+
+\begin{lstlisting}[language=Python]
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
+st.set_page_config(
+    page_title="Executive Performance Dashboard",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Fungsi \texttt{st.set\_page\_config} mengatur parameter dasar meta-data aplikasi:
+\begin{itemize}
+	\item \texttt{page\_title}: Teks yang muncul di tab judul browser.
+	\item \texttt{page\_icon}: Ikon favicon tab browser, di sini digunakan emoji grafik.
+	\item \texttt{layout="wide"}: Memerintahkan Streamlit untuk melebarkan lebar grid konten memenuhi seluruh layar monitor secara horizontal (sangat ideal untuk dashboard executive).
+	\item \texttt{initial\_sidebar\_state="expanded"}: Menjamin letak menu (sidebar) filter di kiri langsung terbuka secara penuh setiap pengguna masuk ke halaman pertama kali.
+\end{itemize}
+
+\textbf{Alur Logika:}
+Fungsi \texttt{st.set\_page\_config()} \textbf{wajib dipanggil sebagai perintah Streamlit pertama} di seluruh file. Jika ada perintah \texttt{st.*} lain yang dipanggil sebelumnya (misal \texttt{st.write()}), Streamlit akan melempar error. Secara internal, saat fungsi ini dieksekusi, Streamlit mengirimkan konfigurasi metadata ke frontend React-nya, yang kemudian mengatur judul tab browser, ikon, dan memilih template layout CSS (\texttt{wide} vs \texttt{centered}) sebelum konten apapun dirender ke layar.
+
+\section{Pemuatan CSS Eksternal}
+Bagian ini menangani injeksi kosmetik dan dekorasi antarmuka melalui kode CSS murni.
+
+\begin{lstlisting}[language=Python]
+# Function to load CSS from an external file
+def load_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# Call the function to load custom CSS
+load_css("style.css")
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Fungsi \texttt{load\_css} membaca isi file \texttt{style.css} agar struktur file Python tetap bersih tanpa campur tangan kode bahasa web. Fungsi \texttt{st.markdown} dengan opsi \texttt{unsafe\_allow\_html=True} kemudian merekatkan kode CSS murni tersebut untuk menimpa gaya bawaan (style bawaan metrik, padding layar, dan warna huruf) milik framework Streamlit.
+
+\textbf{Alur Logika:}
+\begin{enumerate}
+	\item Fungsi \texttt{load\_css("style.css")} dipanggil.
+	\item Di dalam fungsi, Python membuka file \texttt{style.css} menggunakan \texttt{open()} dan membaca seluruh isi teksnya dengan \texttt{f.read()}.
+	\item Isi CSS tersebut kemudian dibungkus di dalam tag HTML \texttt{<style>...</style>} menggunakan f-string.
+	\item Hasil string HTML tersebut dikirimkan ke \texttt{st.markdown()} dengan flag \texttt{unsafe\_allow\_html=True}, yang memerintahkan Streamlit untuk merender HTML mentah alih-alih menampilkannya sebagai teks biasa.
+	\item Hasilnya, browser menerapkan aturan CSS tersebut dan langsung mengubah tampilan visual elemen-elemen pada halaman.
+\end{enumerate}
+
+\section{Fungsi Pembantu Format Teks (Helper Function)}
+Bagian kecil ini membantu merapikan representasi nominal angka.
+
+\begin{lstlisting}[language=Python]
+# ==========================================
+# HELPER FUNCTIONS
+# ==========================================
+def format_rupiah(amount):
+    # Format amount as Rupiah, e.g., Rp 1.500.000
+    return f"Rp {amount:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Python secara bawaan memformat penulisan ribuan menggunakan gaya Amerika (misalnya $1,500.00$). Fungsi ini mencegat output angka, mengubah simbol koma (,) menjadi pemisah titik (.), agar nominal sesuai dengan standar penulisan mata uang Rupiah Indonesia (Rp 1.500.000).
+
+\textbf{Alur Logika:}
+Berikut proses konversi format yang terjadi secara bertahap di dalam fungsi:
+\begin{enumerate}
+	\item Input: angka mentah, misal \texttt{1500000.0}.
+	\item \texttt{f"Rp \{amount:,.0f\}"} menghasilkan string \texttt{"Rp 1,500,000"} (format Amerika dengan koma sebagai pemisah ribuan, tanpa desimal).
+	\item \texttt{.replace(',', 'X')} mengubah koma menjadi placeholder sementara: \texttt{"Rp 1X500X000"}.
+	\item \texttt{.replace('.', ',')} mengubah titik desimal menjadi koma (langkah ini tidak berdampak karena \texttt{,.0f} sudah menghilangkan desimal, namun disiapkan untuk kasus lain).
+	\item \texttt{.replace('X', '.')} mengganti placeholder X menjadi titik: \texttt{"Rp 1.500.000"}.
+	\item Output akhir sesuai standar Rupiah Indonesia.
+\end{enumerate}
+Teknik ``triple-replace'' ini dibutuhkan karena tidak bisa langsung menukar koma dan titik secara bersamaan tanpa placeholder perantara.
+
+\section{Pembuatan Data Simulasi (Mock Data Generation)}
+Inilah tempat lahirnya seluruh data rekayasa yang Anda manipulasi untuk kebutuhan \textit{dashboard} tersebut.
+
+\begin{lstlisting}[language=Python]
+BRAND_SEEDS = {
+    "Brand A": 42,
+    "Brand B": 101,
+    "Brand C": 999,
+    "Brand D": 55,
+    "Semua Merek": 123
+}
+
+@st.cache_data
+def generate_mock_data(brand_name):
+    current_seed = BRAND_SEEDS.get(brand_name, 0)
+    np.random.seed(current_seed)
+    # ... (Proses Pembuatan Data Keuangan, Regional, dan Transaksi)
+    return df_financials, df_regions, df_transactions
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Terdapat dua mekanik penting dalam bagian logika ini:
+\begin{itemize}
+	\item \textbf{Dekorator \texttt{@st.cache\_data}}: Fitur caching bawaan webapp agar sistem tidak menggenerasi ulang angka random tanpa henti yang akan memberatkan server. Selama input merek tetap sama, output data DataFrame-nya akan diambil dari cache.
+	\item \textbf{Penanaman Seed (\texttt{BRAND\_SEEDS})}: Saat melakukan random generation dibutuhkan Seed agar output angka tetap konsisten. Kita memberikan Seed angka yang variatif pada setiap Merek portofolio (misalnya Brand A=42, dll). Ini berefek pada: Setiap nama merek yang dipilih, grafik dan baris datanya akan memiliki pola numerik unik, namun selalu memberikan data yang stabil saat di-refresh.
+\end{itemize}
+
+Lanjutan fungsinya kemudian membagi algoritma dummy data-nya ke dalam tiga buah sub-tabel tipe \texttt{DataFrame} yang disimpan ke dalam memori aplikasi: \texttt{df\_financials} (berisi Revenue \& Profit), \texttt{df\_regions} (Performa antar pulau Indonesia), dan \texttt{df\_transactions} (baris log transaksi ritel detil).
+
+\textbf{Alur Logika:}
+\begin{enumerate}
+	\item Saat fungsi \texttt{generate\_mock\_data(brand\_name)} dipanggil, Streamlit \textbf{terlebih dahulu memeriksa cache}. Jika \texttt{brand\_name} yang sama pernah dipanggil sebelumnya, Streamlit langsung mengembalikan hasil dari cache tanpa mengeksekusi isi fungsinya. Inilah peran dekorator \texttt{@st.cache\_data}.
+	\item Jika cache kosong (panggilan pertama atau merek baru dipilih), maka:
+	      \begin{enumerate}
+		      \item \texttt{BRAND\_SEEDS.get(brand\_name, 0)} mengambil angka seed dari dictionary berdasarkan nama merek.
+		      \item \texttt{np.random.seed(current\_seed)} mengunci generator acak NumPy agar output angka selalu identik untuk seed yang sama.
+		      \item Variabel \texttt{multiplier} dicek: jika merek = ``Semua Merek'', nilainya 5 (mensimulasikan angka agregat gabungan semua merek); jika merek individual, nilainya 1.
+		      \item \texttt{np.random.uniform()} menghasilkan array 12 angka acak untuk revenue bulanan, lalu profit dihitung sebagai persentase acak (15--35\%) dari revenue.
+		      \item Data regional dibuat menggunakan \texttt{np.random.randint()} untuk 6 wilayah Indonesia.
+		      \item Data transaksi detail dibuat dengan \texttt{n\_rows} bervariasi (50--100 untuk merek tunggal, 150 untuk semua merek), kemudian diurutkan berdasarkan tanggal terbaru.
+	      \end{enumerate}
+	\item Fungsi mengembalikan tiga DataFrame: \texttt{df\_financials}, \texttt{df\_regions}, dan \texttt{df\_transactions}.
+	\item Hasil ini di-cache oleh Streamlit, sehingga pemanggilan berikutnya dengan \texttt{brand\_name} yang sama sangat cepat.
+\end{enumerate}
+
+\section{Navigasi Menu Samping (Sidebar UI \& Filters)}
+Bagian kontrol antarmuka yang ditempatkan di panel sempit sebelah kiri dari aplikasi web.
+
+\begin{lstlisting}[language=Python]
+# ==========================================
+# SIDEBAR NAVIGATION & FILTERS
+# ==========================================
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3592/3592606.png", width=60)
+    st.title("Manajemen Eksekutif")
+    # ... (Pilihan Merek dan Wilayah)
+    brands = list(BRAND_SEEDS.keys())
+    selected_brand = st.selectbox("Pilih Merek Kendali", brands, index=len(brands)-1)
+    
+    # Load data dynamically based on the selected brand
+    df_fin, df_reg, df_trx = generate_mock_data(selected_brand)
+    # ...
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Sintaks \texttt{with st.sidebar:} mendeklarasikan bahwa semua fungsi pembuatan tombol, menu turun, dan penempatan kotak markdown setelah baris tersebut akan ditempatkan di dalam tata letak (layout) khusus Sidebar.
+
+Pusat interaksi berada pada variabel \texttt{selected\_brand} yang menampung Merek Portofolio dari dropdown filter oleh manajer. Kemudian baris bawahnya \texttt{generate\_mock\_data(selected\_brand)} akan diaktifkan secara tak langsung.
+
+\textbf{Alur Logika:}
+\begin{enumerate}
+	\item Blok \texttt{with st.sidebar:} membuat konteks khusus; semua widget yang didefinisikan di dalamnya akan dirender di panel kiri.
+	\item \texttt{st.image()} memuat ikon dari URL eksternal dan menampilkannya dengan lebar 60px.
+	\item \texttt{st.selectbox()} merender sebuah dropdown. Parameter \texttt{index=len(brands)-1} menjadikan opsi terakhir (``Semua Merek'') sebagai pilihan default.
+	\item Begitu pengguna mengubah pilihan dropdown, Streamlit melakukan \textbf{re-run otomatis} terhadap seluruh file \texttt{app.py} dari baris pertama. Ini adalah mekanisme inti Streamlit: setiap interaksi widget memicu eksekusi ulang seluruh script.
+	\item Pada re-run tersebut, variabel \texttt{selected\_brand} kini berisi nilai baru. Baris \texttt{generate\_mock\_data(selected\_brand)} dipanggil dengan argumen baru, menghasilkan data yang berbeda.
+	\item Variabel \texttt{df\_fin}, \texttt{df\_reg}, \texttt{df\_trx} kini menampung DataFrame baru yang sesuai merek terpilih, dan seluruh elemen di bawahnya (KPI, chart, tabel) akan merender data baru tersebut.
+	\item Widget \texttt{st.multiselect()} untuk wilayah juga diperbarui berdasarkan data merek baru (mengambil daftar wilayah dari \texttt{df\_reg} yang baru).
+\end{enumerate}
+
+\section{Elemen Halaman Utama - Area KPI (Key Performance Indicator)}
+Titik presentasi metrik kunci *top-level* di \textit{header} tampilan yang meringkas laju bisnis saat ini.
+
+\begin{lstlisting}[language=Python]
+# ==========================================
+# MAIN DASHBOARD AREA
+# ==========================================
+st.title(f"Ringkasan Kinerja Eksekutif: {selected_brand}")
+
+# --- KPIs SECTION ---
+col1, col2, col3, col4 = st.columns(4)
+
+# ... (Logika kalkulasi perbedaan bulan berjalan VS bulan lalu)
+
+with col1:
+    st.metric(
+        label="Pendapatan Bulanan", 
+        value=f"Rp {current_revenue/1e9:.2f} M", 
+        delta=f"{rev_growth:.1f}% dari bulan lalu"
+    )
+# ... (Diulangi ke kolom metrik 2, 3, dan 4)
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Area layar utama dialokasikan menjadi ruang terpisah berjumlah 4 lajur identik memanjang menggunakan fungsi \texttt{st.columns(4)}.
+
+Pada masing-masing blok kolom (menggunakan notasi \texttt{with col:}), \texttt{st.metric} disematkan untuk mencetak antarmuka kotak KPI numerik besar.
+
+\textbf{Alur Logika:}
+\begin{enumerate}
+	\item \texttt{st.columns(4)} membuat 4 kontainer kolom dengan lebar yang sama. Masing-masing dikembalikan sebagai objek Python (\texttt{col1} sampai \texttt{col4}).
+	\item Sebelum merender KPI, kode menghitung nilai pertumbuhan (growth):
+	      \begin{enumerate}
+		      \item \texttt{df\_fin['Pendapatan (IDR)'].iloc[-1]} mengambil pendapatan bulan \textbf{terakhir} (indeks -1).
+		      \item \texttt{df\_fin['Pendapatan (IDR)'].iloc[-2]} mengambil pendapatan bulan \textbf{sebelumnya} (indeks -2).
+		      \item Rumus: \texttt{rev\_growth = ((current - prev) / prev) * 100} menghasilkan persentase pertumbuhan.
+		      \item Proses yang sama diulang untuk kolom Laba Bersih.
+	      \end{enumerate}
+	\item Di dalam setiap blok \texttt{with col:}, \texttt{st.metric()} dirender dengan 3 parameter:
+	      \begin{itemize}
+		      \item \texttt{label}: Judul KPI (misal ``Pendapatan Bulanan'').
+		      \item \texttt{value}: Angka utama. Pembagian \texttt{/1e9} mengkonversi satuan ke Miliar agar ringkas.
+		      \item \texttt{delta}: Teks perbandingan yang otomatis ditampilkan Streamlit dengan warna hijau (positif) atau merah (negatif).
+	      \end{itemize}
+	\item Streamlit secara otomatis menentukan warna delta: hijau jika angkanya positif (naik), merah jika negatif (turun). Parameter \texttt{delta\_color="normal"} pada kolom ke-3 mempertahankan perilaku default ini.
+\end{enumerate}
+
+\section{Area Representasi Visual (Charts Section)}
+Layar bagian tengah menampilkan representasi grafik dari data tabel.
+
+\begin{lstlisting}[language=Python]
+# --- CHARTS SECTION ---
+st.markdown("### 📈 Tren Keuangan & Penjualan Ritel")
+chart_col1, chart_col2 = st.columns([2, 1])
+
+with chart_col1:
+    st.markdown("**Tren Pendapatan & Laba Ritel (12 Bulan Terakhir)**")
+    df_chart = df_fin.set_index('Bulan')[['Pendapatan (IDR)', 'Laba Bersih (IDR)']]
+    st.line_chart(df_chart, use_container_width=True)
+
+with chart_col2:
+    st.markdown(f"**Distribusi Penjualan {selected_brand}**")
+    df_bar = df_reg.set_index('Wilayah')
+    st.bar_chart(df_bar, use_container_width=True)
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Layar kembali dipecah (split) menjadi dua kolom yang tidak simetris (ukuran 2/3 dan 1/3) melalui variabel rasio \texttt{[2, 1]}.
+\begin{itemize}
+	\item \textbf{Line Chart (\texttt{st.line\_chart})}: Berada di ruang besar (kiri) untuk menampilkan komparasi antara Pendapatan dan Laba bersumbu absis nama-nama bulan.
+	\item \textbf{Bar Chart (\texttt{st.bar\_chart})}: Berada di ruang kecil (kanan), bertugas menunjukkan histogram penjualan antar region pulau.
+\end{itemize}
+
+\textbf{Alur Logika:}
+\begin{enumerate}
+	\item \texttt{st.columns([2, 1])} membuat 2 kolom dengan rasio lebar 2:1. Kolom pertama mendapat sekitar 66\% lebar layar, kolom kedua mendapat 33\%.
+	\item \textbf{Untuk Line Chart:}
+	      \begin{enumerate}
+		      \item \texttt{df\_fin.set\_index('Bulan')} mengubah kolom ``Bulan'' menjadi indeks DataFrame. Hal ini penting karena \texttt{st.line\_chart()} secara default menggunakan indeks sebagai sumbu X.
+		      \item Operator \texttt{[['Pendapatan (IDR)', 'Laba Bersih (IDR)']]} memilih hanya dua kolom numerik yang ingin diplot. Streamlit otomatis menggambar satu garis per kolom dengan warna dan legenda berbeda.
+		      \item \texttt{use\_container\_width=True} membuat grafik mengisi seluruh lebar kontainer kolom.
+	      \end{enumerate}
+	\item \textbf{Untuk Bar Chart:}
+	      \begin{enumerate}
+		      \item Proses serupa: \texttt{df\_reg.set\_index('Wilayah')} menjadikan nama wilayah sebagai label sumbu X.
+		      \item DataFrame hanya berisi satu kolom numerik (``Volume Penjualan''), sehingga dihasilkan satu set bar.
+		      \item Streamlit secara internal menggunakan library Altair/Vega-Lite untuk merender grafik ke dalam elemen HTML canvas.
+	      \end{enumerate}
+\end{enumerate}
+
+\section{Tabel Transaksi Historis (Detailed Table)}
+Blok kode memanjang horizontal terakhir di kaki \textit{dashboard} untuk menunjukan tabuler baris-per-baris kejadian ritel.
+
+\begin{lstlisting}[language=Python]
+# --- RECENT TRANSACTIONS TABLE ---
+st.markdown("### 📋 Detail Transaksi Toko / Cabang Terkini")
+
+# Format amount column for better readability
+df_display = df_trx.copy()
+df_display['Nilai Transaksi'] = df_display['Nilai Transaksi'].apply(format_rupiah)
+
+# Display dataframe with Streamlit native styler
+st.dataframe(
+    df_display.head(15),
+    use_container_width=True,
+    hide_index=True
+)
+\end{lstlisting}
+
+\textbf{Penjelasan:}
+Sebelum di-render, script mereplikasi bingkai matriks tabel aslinya menggunakan sintaks \texttt{.copy()} memastikan tidak merusak struktur raw data. Kemudian sebuah loop parsial otomatis dijalankan (sintaks \texttt{.apply}) untuk menerapkan fungsi \texttt{format\_rupiah} kepada setiap elemen pada kolom ``Nilai Transaksi''.
+
+Tabel akhirnya disajikan kembali menggunakan API natif Streamlit bernama \texttt{st.dataframe} dan dibatasi hanya 15 data baris teratas agar layar presentasi tidak terlalu panjang.
+
+\textbf{Alur Logika:}
+\begin{enumerate}
+	\item \texttt{df\_trx.copy()} membuat salinan independen dari DataFrame transaksi asli. Ini adalah pola penting: jika kita langsung memodifikasi \texttt{df\_trx}, maka data numerik asli kolom ``Nilai Transaksi'' akan berubah menjadi string dan tidak bisa digunakan lagi untuk kalkulasi di tempat lain.
+	\item \texttt{.apply(format\_rupiah)} menjalankan fungsi \texttt{format\_rupiah} terhadap \textbf{setiap sel} pada kolom ``Nilai Transaksi''. Secara internal, Pandas melakukan iterasi baris per baris, memanggil \texttt{format\_rupiah(amount)} untuk setiap nilai, dan menggantikan angka mentah dengan string berformat (misal: \texttt{1500000.0} $\rightarrow$ \texttt{"Rp 1.500.000"}).
+	\item \texttt{df\_display.head(15)} mengambil 15 baris pertama saja. Karena DataFrame sudah diurutkan berdasarkan tanggal terbaru (lihat bagian Data Generation), maka 15 baris ini adalah 15 transaksi paling baru.
+	\item \texttt{st.dataframe()} merender tabel interaktif yang dapat di-scroll dan diurutkan oleh pengguna. Parameter \texttt{hide\_index=True} menyembunyikan kolom indeks numeris (0, 1, 2, ...) agar tampilan lebih bersih.
+	\item Terakhir, \texttt{st.caption()} menambahkan teks kecil di bagian bawah sebagai catatan kerahasiaan dokumen.
+\end{enumerate}
+
+\end{document}

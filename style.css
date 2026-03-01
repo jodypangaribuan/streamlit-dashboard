@@ -1,0 +1,27 @@
+/* Main container padding */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Metric Card Styling */
+div[data-testid="stMetricValue"] {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1f77b4;
+}
+div[data-testid="stMetricDelta"] {
+    font-size: 1rem;
+}
+
+/* Clean Headers */
+h1 {
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+h2, h3 {
+    font-weight: 600;
+    color: #34495e;
+    margin-top: 1.5rem;
+}
